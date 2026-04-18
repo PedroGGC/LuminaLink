@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { generateSlug, isValidSlug } from '../utils/slug.js';
 import { isDomainBlocked } from '../utils/blacklist.js';
+import { hashPassword } from '../utils/password.js';
 
 const prisma = new PrismaClient();
 const PORT = parseInt(process.env.PORT || '3002');
@@ -8,6 +9,7 @@ const PORT = parseInt(process.env.PORT || '3002');
 export interface CreateLinkInput {
   originalUrl: string;
   customSlug?: string;
+  password?: string;
 }
 
 export interface LinkResponse {
@@ -16,13 +18,14 @@ export interface LinkResponse {
   shortUrl: string;
   originalUrl: string;
   clickCount: number;
+  hasPassword: boolean;
   expiresAt?: Date;
   maxClicks?: number;
   createdAt: Date;
 }
 
 export async function createLink(input: CreateLinkInput): Promise<LinkResponse> {
-  const { originalUrl, customSlug } = input;
+  const { originalUrl, customSlug, password } = input;
 
   try {
     new URL(originalUrl);
@@ -36,6 +39,11 @@ export async function createLink(input: CreateLinkInput): Promise<LinkResponse> 
 
   let shortCode: string;
   let isCustom = false;
+  let passwordHash: string | undefined;
+
+  if (password) {
+    passwordHash = await hashPassword(password);
+  }
 
   if (customSlug) {
     if (!isValidSlug(customSlug)) {
@@ -60,6 +68,8 @@ export async function createLink(input: CreateLinkInput): Promise<LinkResponse> 
       shortCode,
       originalUrl,
       customCode: isCustom,
+      hasPassword: !!password,
+      passwordHash: passwordHash,
     },
   });
 
@@ -69,6 +79,7 @@ export async function createLink(input: CreateLinkInput): Promise<LinkResponse> 
     shortUrl: `http://localhost:${PORT}/${link.shortCode}`,
     originalUrl: link.originalUrl,
     clickCount: link.clickCount,
+    hasPassword: link.hasPassword,
     createdAt: link.createdAt,
   };
 }
@@ -83,6 +94,7 @@ export async function getLinkBySlug(shortCode: string): Promise<LinkResponse | n
     shortUrl: `http://localhost:${PORT}/${link.shortCode}`,
     originalUrl: link.originalUrl,
     clickCount: link.clickCount,
+    hasPassword: link.hasPassword,
     expiresAt: link.expiresAt || undefined,
     maxClicks: link.maxClicks || undefined,
     createdAt: link.createdAt,
@@ -112,6 +124,7 @@ export async function updateLink(shortCode: string, originalUrl: string): Promis
     shortUrl: `http://localhost:${PORT}/${link.shortCode}`,
     originalUrl: link.originalUrl,
     clickCount: link.clickCount,
+    hasPassword: link.hasPassword,
     createdAt: link.createdAt,
   };
 }

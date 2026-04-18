@@ -3,14 +3,14 @@ import { createLink, getLinkBySlug, updateLink, deleteLink } from '../services/l
 
 export async function linkRoutes(fastify: FastifyInstance) {
   fastify.post('/api/links', async (request, reply) => {
-    const { originalUrl, customSlug } = request.body as { originalUrl: string; customSlug?: string };
+    const { originalUrl, customSlug, password } = request.body as { originalUrl: string; customSlug?: string; password?: string };
 
     if (!originalUrl) {
       return reply.status(400).send({ error: 'originalUrl is required' });
     }
 
     try {
-      const link = await createLink({ originalUrl, customSlug });
+      const link = await createLink({ originalUrl, customSlug, password });
       return reply.status(201).send(link);
     } catch (err: any) {
       if (err.message === 'INVALID_URL') {
