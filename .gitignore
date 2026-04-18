@@ -19,3 +19,4 @@ coverage/
 *.swo
 prisma/migrations/
 AGENTS.MD
+tests/
