@@ -20,3 +20,5 @@ coverage/
 prisma/migrations/
 AGENTS.MD
 tests/
+preview.html
+preview.ts
