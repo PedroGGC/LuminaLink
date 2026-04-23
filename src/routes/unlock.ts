@@ -1,8 +1,7 @@
+import { eq } from 'drizzle-orm';
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import { hashPassword, verifyPassword } from '../utils/password.js';
-
-const prisma = new PrismaClient();
+import { verifyPassword } from '../utils/password.js';
+import { db, links } from '../db/index.js';
 
 export async function unlockRoutes(fastify: FastifyInstance) {
   fastify.post('/api/links/:shortCode/unlock', async (request, reply) => {
@@ -13,7 +12,7 @@ export async function unlockRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Password required' });
     }
 
-    const link = await prisma.link.findUnique({ where: { shortCode } });
+    const link = db.select().from(links).where(eq(links.shortCode, shortCode)).get();
     if (!link) {
       return reply.status(404).send({ error: 'Link not found' });
     }
