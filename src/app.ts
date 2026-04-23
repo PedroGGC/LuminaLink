@@ -12,6 +12,8 @@ import { unlockRoutes } from './routes/unlock.js';
 import { statsRoutes } from './routes/stats.js';
 import fastifyStatic from '@fastify/static';
 import { resolve } from 'path';
+import { getRedis } from './db/redis.js';
+import { startClickWorker } from './services/click-worker.js';
 
 dotenv.config();
 
@@ -22,6 +24,17 @@ const app = Fastify({ logger: true });
 
 async function start() {
   try {
+    // Initialize Redis connection
+    const redis = getRedis();
+    if (redis) {
+      console.log('[Redis] Client initialized');
+    } else {
+      console.warn('[Redis] Not available, using DB fallback');
+    }
+
+    // Start click worker
+    startClickWorker();
+
     await app.register(cors);
     await app.register(helmet, {
       contentSecurityPolicy: false,

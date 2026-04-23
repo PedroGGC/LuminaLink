@@ -3,26 +3,10 @@ import { db, links as linksTable } from '../db/index.js';
 import { generateSlug, isValidSlug } from '../utils/slug.js';
 import { isDomainBlocked } from '../utils/blacklist.js';
 import { hashPassword } from '../utils/password.js';
+import { getRedis } from '../db/redis.js';
 
 const PORT = parseInt(process.env.PORT || '3002');
-
-export interface CreateLinkInput {
-  originalUrl: string;
-  customSlug?: string;
-  password?: string;
-}
-
-export interface LinkResponse {
-  id: string;
-  shortCode: string;
-  shortUrl: string;
-  originalUrl: string;
-  clickCount: number;
-  hasPassword: boolean;
-  expiresAt?: Date;
-  maxClicks?: number;
-  createdAt: Date;
-}
+const CACHE_TTL = 3600;
 
 function mapLinkToResponse(link: any): LinkResponse {
   return {
@@ -36,6 +20,47 @@ function mapLinkToResponse(link: any): LinkResponse {
     maxClicks: link.maxClicks || undefined,
     createdAt: new Date(link.createdAt),
   };
+}
+
+function getRedisSafe() {
+  try {
+    const r = getRedis();
+    if (!r) return null;
+    if (r.status !== 'ready' && r.status !== 'connect') return null;
+    return r;
+  } catch {
+    return null;
+  }
+}
+
+export async function getCachedUrl(shortCode: string): Promise<string | null> {
+  const redis = getRedisSafe();
+  if (!redis) return null;
+  try {
+    return await redis.get(`url:${shortCode}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function cacheUrl(shortCode: string, originalUrl: string): Promise<void> {
+  const redis = getRedisSafe();
+  if (!redis) return;
+  try {
+    await redis.setex(`url:${shortCode}`, CACHE_TTL, originalUrl);
+  } catch {
+    // Ignore
+  }
+}
+
+export async function invalidateCache(shortCode: string): Promise<void> {
+  const redis = getRedisSafe();
+  if (!redis) return;
+  try {
+    await redis.del(`url:${shortCode}`);
+  } catch {
+    // Ignore
+  }
 }
 
 export async function createLink(input: CreateLinkInput): Promise<LinkResponse> {
@@ -96,12 +121,25 @@ export async function createLink(input: CreateLinkInput): Promise<LinkResponse> 
   const newLink = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
   if (!newLink) throw new Error('CREATE_FAILED');
 
+  await cacheUrl(shortCode, originalUrl);
+
   return mapLinkToResponse(newLink);
 }
 
 export async function getLinkBySlug(shortCode: string): Promise<LinkResponse | null> {
   const link = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
   if (!link) return null;
+  if (!link.isActive) return null;
+
+  // Try to sync cache
+  try {
+    const cached = await getCachedUrl(shortCode);
+    if (cached !== link.originalUrl) {
+      await cacheUrl(shortCode, link.originalUrl);
+    }
+  } catch {
+    // Ignore cache
+  }
 
   return mapLinkToResponse(link);
 }
@@ -126,6 +164,8 @@ export async function updateLink(shortCode: string, originalUrl: string): Promis
     .where(eq(linksTable.shortCode, shortCode))
     .run();
 
+  await cacheUrl(shortCode, originalUrl);
+
   const link = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
   if (!link) return null;
 
@@ -140,6 +180,8 @@ export async function deleteLink(shortCode: string): Promise<boolean> {
     .set({ isActive: 0 })
     .where(eq(linksTable.shortCode, shortCode))
     .run();
+
+  await invalidateCache(shortCode);
 
   return true;
 }

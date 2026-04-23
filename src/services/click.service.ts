@@ -12,15 +12,14 @@ export interface CreateClickInput {
 }
 
 export async function createClick(input: CreateClickInput) {
-  return db.insert(clicksTable).values({
-    linkId: input.linkId,
-    clickedAt: Date.now(),
-    referrer: input.referrer || null,
-    userAgent: input.userAgent || null,
-    ipAddress: input.ipAddress || null,
-    country: input.country || null,
-    city: input.city || null,
-    device: input.device || null,
-    os: input.os || null,
-  }).run();
+  const { queueClick } = await import('./click-worker.js');
+  return queueClick(input.linkId, {
+    referrer: input.referrer,
+    userAgent: input.userAgent,
+    ipAddress: input.ipAddress,
+    country: input.country,
+    city: input.city,
+    device: input.device,
+    os: input.os,
+  });
 }

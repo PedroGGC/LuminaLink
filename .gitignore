@@ -25,3 +25,4 @@ preview.ts
 .mcp.json
 .opencode.json
 GEMINI.md
+test-redis-connection.js
