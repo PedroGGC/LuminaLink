@@ -22,3 +22,6 @@ AGENTS.MD
 tests/
 preview.html
 preview.ts
+.mcp.json
+.opencode.json
+GEMINI.md
