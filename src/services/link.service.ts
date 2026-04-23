@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { eq } from 'drizzle-orm';
+import { db, links as linksTable } from '../db/index.js';
 import { generateSlug, isValidSlug } from '../utils/slug.js';
 import { isDomainBlocked } from '../utils/blacklist.js';
 import { hashPassword } from '../utils/password.js';
 
-const prisma = new PrismaClient();
 const PORT = parseInt(process.env.PORT || '3002');
 
 export interface CreateLinkInput {
@@ -22,6 +22,20 @@ export interface LinkResponse {
   expiresAt?: Date;
   maxClicks?: number;
   createdAt: Date;
+}
+
+function mapLinkToResponse(link: any): LinkResponse {
+  return {
+    id: link.id,
+    shortCode: link.shortCode,
+    shortUrl: `http://localhost:${PORT}/${link.shortCode}`,
+    originalUrl: link.originalUrl,
+    clickCount: link.clickCount || 0,
+    hasPassword: Boolean(link.hasPassword),
+    expiresAt: link.expiresAt ? new Date(link.expiresAt) : undefined,
+    maxClicks: link.maxClicks || undefined,
+    createdAt: new Date(link.createdAt),
+  };
 }
 
 export async function createLink(input: CreateLinkInput): Promise<LinkResponse> {
@@ -49,7 +63,7 @@ export async function createLink(input: CreateLinkInput): Promise<LinkResponse> 
     if (!isValidSlug(customSlug)) {
       throw new Error('INVALID_SLUG');
     }
-    const existing = await prisma.link.findUnique({ where: { shortCode: customSlug } });
+    const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, customSlug)).get();
     if (existing) {
       throw new Error('SLUG_TAKEN');
     }
@@ -57,55 +71,49 @@ export async function createLink(input: CreateLinkInput): Promise<LinkResponse> 
     isCustom = true;
   } else {
     let attempts = 0;
+    let found = true;
     do {
       shortCode = generateSlug();
       attempts++;
-    } while (attempts < 10 && await prisma.link.findUnique({ where: { shortCode } }));
+      const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+      found = !!existing;
+    } while (attempts < 10 && found);
   }
 
-  const link = await prisma.link.create({
-    data: {
-      shortCode,
-      originalUrl,
-      customCode: isCustom,
-      hasPassword: !!password,
-      passwordHash: passwordHash,
-    },
-  });
+  const now = Date.now();
+  db.insert(linksTable).values({
+    shortCode,
+    originalUrl,
+    customCode: isCustom ? 1 : 0,
+    hasPassword: password ? 1 : 0,
+    passwordHash: passwordHash || null,
+    clickCount: 0,
+    isActive: 1,
+    createdAt: now,
+    updatedAt: now,
+  }).run();
 
-  return {
-    id: link.id,
-    shortCode: link.shortCode,
-    shortUrl: `http://localhost:${PORT}/${link.shortCode}`,
-    originalUrl: link.originalUrl,
-    clickCount: link.clickCount,
-    hasPassword: link.hasPassword,
-    createdAt: link.createdAt,
-  };
+  const newLink = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  if (!newLink) throw new Error('CREATE_FAILED');
+
+  return mapLinkToResponse(newLink);
 }
 
 export async function getLinkBySlug(shortCode: string): Promise<LinkResponse | null> {
-  const link = await prisma.link.findUnique({ where: { shortCode } });
+  const link = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
   if (!link) return null;
 
-  return {
-    id: link.id,
-    shortCode: link.shortCode,
-    shortUrl: `http://localhost:${PORT}/${link.shortCode}`,
-    originalUrl: link.originalUrl,
-    clickCount: link.clickCount,
-    hasPassword: link.hasPassword,
-    expiresAt: link.expiresAt || undefined,
-    maxClicks: link.maxClicks || undefined,
-    createdAt: link.createdAt,
-  };
+  return mapLinkToResponse(link);
 }
 
 export async function incrementClickCount(shortCode: string): Promise<void> {
-  await prisma.link.update({
-    where: { shortCode },
-    data: { clickCount: { increment: 1 } },
-  });
+  const link = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  if (!link) return;
+
+  db.update(linksTable)
+    .set({ clickCount: (link.clickCount || 0) + 1 })
+    .where(eq(linksTable.shortCode, shortCode))
+    .run();
 }
 
 export async function updateLink(shortCode: string, originalUrl: string): Promise<LinkResponse | null> {
@@ -113,32 +121,25 @@ export async function updateLink(shortCode: string, originalUrl: string): Promis
     throw new Error('DOMAIN_BLOCKED');
   }
 
-  const link = await prisma.link.update({
-    where: { shortCode },
-    data: { originalUrl, isActive: true },
-  });
+  db.update(linksTable)
+    .set({ originalUrl, isActive: 1, updatedAt: Date.now() })
+    .where(eq(linksTable.shortCode, shortCode))
+    .run();
 
-  return {
-    id: link.id,
-    shortCode: link.shortCode,
-    shortUrl: `http://localhost:${PORT}/${link.shortCode}`,
-    originalUrl: link.originalUrl,
-    clickCount: link.clickCount,
-    hasPassword: link.hasPassword,
-    createdAt: link.createdAt,
-  };
+  const link = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  if (!link) return null;
+
+  return mapLinkToResponse(link);
 }
 
 export async function deleteLink(shortCode: string): Promise<boolean> {
-  const link = await prisma.link.findUnique({ where: { shortCode } });
-  if (!link) return false;
+  const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  if (!existing) return false;
 
-  await prisma.link.update({
-    where: { shortCode },
-    data: { isActive: false },
-  });
+  db.update(linksTable)
+    .set({ isActive: 0 })
+    .where(eq(linksTable.shortCode, shortCode))
+    .run();
 
   return true;
 }
-
-export { prisma };

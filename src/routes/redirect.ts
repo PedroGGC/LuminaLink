@@ -1,5 +1,31 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { getLinkBySlug, incrementClickCount } from '../services/link.service.js';
+import { createClick } from '../services/click.service.js';
+import { lookupGeo } from '../services/geo.service.js';
+
+function parseDevice(userAgent: string | undefined): { device: string; os: string } {
+  const ua = (userAgent || '').toLowerCase();
+  let device = 'desktop';
+  let os = 'unknown';
+
+  if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone') || ua.includes('ipad')) {
+    device = 'mobile';
+  }
+
+  if (ua.includes('iphone') || ua.includes('ipad')) {
+    os = 'iOS';
+  } else if (ua.includes('android')) {
+    os = 'Android';
+  } else if (ua.includes('windows')) {
+    os = 'Windows';
+  } else if (ua.includes('mac')) {
+    os = 'macOS';
+  } else if (ua.includes('linux')) {
+    os = 'Linux';
+  }
+
+  return { device, os };
+}
 
 export async function redirectRoutes(fastify: FastifyInstance) {
   fastify.get('/:shortCode', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -27,6 +53,24 @@ export async function redirectRoutes(fastify: FastifyInstance) {
     }
 
     await incrementClickCount(shortCode);
+
+    const userAgent = request.headers['user-agent'] as string | undefined;
+    const referrer = request.headers['referer'] as string | undefined;
+    const ipAddress = (request.ip || request.headers['x-forwarded-for'] as string | undefined) || undefined;
+    const { device, os } = parseDevice(userAgent);
+
+    const geo = await lookupGeo(ipAddress || '');
+
+    await createClick({
+      linkId: link.id,
+      referrer,
+      userAgent,
+      ipAddress,
+      country: geo.country,
+      city: geo.city,
+      device,
+      os,
+    });
 
     reply.redirect(link.originalUrl, 302);
   });

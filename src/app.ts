@@ -2,7 +2,6 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import cookie from '@fastify/cookie';
-import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import { linkRoutes } from './routes/links.js';
 import { redirectRoutes } from './routes/redirect.js';
@@ -10,6 +9,7 @@ import { qrcodeRoutes } from './routes/qrcode.js';
 import { previewRoutes } from './routes/preview.js';
 import { utmRoutes } from './routes/utm.js';
 import { unlockRoutes } from './routes/unlock.js';
+import { statsRoutes } from './routes/stats.js';
 import fastifyStatic from '@fastify/static';
 import { resolve } from 'path';
 
@@ -18,7 +18,6 @@ dotenv.config();
 const PORT = parseInt(process.env.PORT || '3002');
 const PUBLIC_ROOT = resolve('./src/public');
 
-const prisma = new PrismaClient();
 const app = Fastify({ logger: true });
 
 async function start() {
@@ -39,6 +38,7 @@ async function start() {
     await app.register(previewRoutes);
     await app.register(utmRoutes);
     await app.register(unlockRoutes);
+    await app.register(statsRoutes);
 
     app.get('/health', async () => ({ status: 'ok' }));
 
@@ -52,4 +52,4 @@ async function start() {
 
 start();
 
-export { app, prisma };
+export { app };
