@@ -27,34 +27,26 @@ export async function queueClick(linkId: string, data: {
   device?: string;
   os?: string;
 }): Promise<void> {
-  const redis = getRedisSafe();
-  if (!redis) {
-    return createClickDirect(linkId, data);
-  }
-
-  try {
-    await redis.lpush(CLICK_QUEUE_KEY, JSON.stringify({
-      linkId,
-      ...data,
-      clickedAt: Date.now(),
-    }));
-  } catch {
-    createClickDirect(linkId, data);
-  }
+  writeClickDirect(linkId, data);
 }
 
-async function createClickDirect(linkId: string, data: any) {
-  db.insert(clicksTable).values({
-    linkId,
-    clickedAt: Date.now(),
-    referrer: data.referrer || null,
-    userAgent: data.userAgent || null,
-    ipAddress: data.ipAddress || null,
-    country: data.country || null,
-    city: data.city || null,
-    device: data.device || null,
-    os: data.os || null,
-  }).run();
+function writeClickDirect(linkId: string, data: any) {
+  const now = Date.now();
+  try {
+    db.insert(clicksTable).values({
+      linkId,
+      clickedAt: now,
+      referrer: data.referrer || null,
+      userAgent: data.userAgent || null,
+      ipAddress: data.ipAddress || null,
+      country: data.country || null,
+      city: data.city || null,
+      device: data.device || null,
+      os: data.os || null,
+    }).run();
+  } catch (err) {
+    console.error('[ClickWorker] Direct insert failed:', err);
+  }
 }
 
 export async function flushClicksToDb(): Promise<number> {
@@ -76,7 +68,7 @@ export async function flushClicksToDb(): Promise<number> {
     for (const clickStr of clicks) {
       try {
         const click = JSON.parse(clickStr);
-        await createClickDirect(click.linkId, click);
+        writeClickDirect(click.linkId, click);
       } catch {
         // Skip invalid entries
       }

@@ -36,7 +36,7 @@ export async function redirectRoutes(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Link not found' });
     }
 
-    const now = new Date();
+    const now = Date.now();
     if (link.expiresAt && link.expiresAt < now) {
       return reply.status(410).send({ error: 'Link expired' });
     }
@@ -56,10 +56,10 @@ export async function redirectRoutes(fastify: FastifyInstance) {
 
     const userAgent = request.headers['user-agent'] as string | undefined;
     const referrer = request.headers['referer'] as string | undefined;
-    const ipAddress = (request.ip || request.headers['x-forwarded-for'] as string | undefined) || undefined;
+    const ipAddress = (request.ip === '::1' || request.ip === '127.0.0.1' ? '' : request.ip) || request.headers['x-forwarded-for'] as string || '';
     const { device, os } = parseDevice(userAgent);
 
-    const geo = await lookupGeo(ipAddress || '');
+    const geo = await lookupGeo(ipAddress);
 
     await createClick({
       linkId: link.id,
@@ -84,28 +84,117 @@ export async function redirectRoutes(fastify: FastifyInstance) {
     }
 
     const html = `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Link Protegido</title>
+  <title>Protected Link</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
-    .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
-    h1 { color: #333; margin-bottom: 20px; }
-    input { padding: 12px; border: 1px solid #ddd; border-radius: 6px; width: 200px; margin-bottom: 10px; }
-    button { padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    button:hover { background: #5568d3; }
-    .error { color: red; margin-top: 10px; }
+    @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Geist:wght@400;500;600&display=swap');
+    body { 
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      min-height: 100dvh; 
+      margin: 0; 
+      background: #F9F8F6; /* Warm coffee bone background */
+      color: #111111;
+    }
+    .container { 
+      background: #FFFFFF; 
+      padding: 48px 40px; 
+      border-radius: 8px; 
+      border: 1.5px solid #111111;
+      box-shadow: 4px 4px 0px 0px rgba(17, 17, 17, 1);
+      text-align: center; 
+      width: 100%;
+      max-width: 400px;
+    }
+    h1 { 
+      font-family: 'Newsreader', serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: #111111; 
+      margin-top: 0;
+      margin-bottom: 8px; 
+      letter-spacing: -0.02em;
+    }
+    p {
+      color: #787774;
+      font-size: 15px;
+      margin-bottom: 32px;
+    }
+    .input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+      background: #FFFFFF;
+      border: 1.5px solid #EAEAEA;
+      border-radius: 6px;
+      padding: 4px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-group:focus-within {
+      border-color: #111111;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    input { 
+      flex: 1;
+      padding: 10px 16px; 
+      border: none;
+      background: transparent;
+      font-size: 15px;
+      color: #111111;
+      outline: none;
+    }
+    input::placeholder {
+      color: #A0A0A0;
+    }
+    button { 
+      padding: 10px 20px; 
+      background: #111111; 
+      color: white; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-weight: 500;
+      font-size: 14px;
+      transition: transform 0.2s, background 0.2s;
+    }
+    button:hover { 
+      background: #333333; 
+    }
+    button:active {
+      transform: scale(0.96);
+    }
+    .error { 
+      color: #D93025; 
+      font-size: 13px;
+      font-weight: 500;
+      margin-top: 16px; 
+      min-height: 20px;
+    }
+    .lock-icon {
+      margin-bottom: 24px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Este link é protegido por senha</h1>
+    <div class="lock-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    </div>
+    <h1>Protected Link</h1>
+    <p>Please enter the password to continue.</p>
     <form id="unlockForm" data-short-code="${shortCode}">
-      <input type="password" id="password" placeholder="Digite a senha" required>
-      <br>
-      <button type="submit">Desbloquear</button>
+      <div class="input-group">
+        <input type="password" id="password" placeholder="Password" required autofocus>
+        <button type="submit">Unlock</button>
+      </div>
     </form>
     <div class="error" id="error"></div>
   </div>

@@ -10,7 +10,7 @@ let geoLookup: any = null;
 async function initGeoLookup() {
   try {
     const maxmind = await import('maxmind');
-    const dbPath = path.join(process.cwd(), 'data', 'GeoLite2-Country.mmdb');
+    const dbPath = path.join(process.cwd(), 'data', 'GeoLite2-City.mmdb');
     geoLookup = await maxmind.default.open(dbPath);
     console.log('MaxMind GeoIP database loaded successfully');
   } catch {
