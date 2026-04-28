@@ -26,3 +26,4 @@ preview.ts
 .opencode.json
 GEMINI.md
 test-redis-connection.js
+GeoLite2-City.mmdb

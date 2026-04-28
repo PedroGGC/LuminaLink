@@ -1,0 +1,8 @@
+/* Fonts loaded via index.html CDN links */
+/* Tailwind loaded via CDN in index.html */
+
+body {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
