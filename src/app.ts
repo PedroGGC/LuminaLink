@@ -10,10 +10,13 @@ import { previewRoutes } from './routes/preview.js';
 import { utmRoutes } from './routes/utm.js';
 import { unlockRoutes } from './routes/unlock.js';
 import { statsRoutes } from './routes/stats.js';
+import { dashboardRoutes } from './routes/dashboard.js';
+import { authRoutes } from './routes/auth.js';
 import fastifyStatic from '@fastify/static';
 import { resolve } from 'path';
 import { getRedis } from './db/redis.js';
 import { startClickWorker } from './services/click-worker.js';
+import { cleanupExpiredLinks } from './services/link.service.js';
 
 dotenv.config();
 
@@ -35,6 +38,10 @@ async function start() {
     // Start click worker
     startClickWorker();
 
+    // Cleanup expired links every hour
+    cleanupExpiredLinks();
+    setInterval(cleanupExpiredLinks, 3600000);
+
     await app.register(cors);
     await app.register(helmet, {
       contentSecurityPolicy: false,
@@ -52,6 +59,8 @@ async function start() {
     await app.register(utmRoutes);
     await app.register(unlockRoutes);
     await app.register(statsRoutes);
+    await app.register(dashboardRoutes);
+    await app.register(authRoutes);
 
     app.get('/health', async () => ({ status: 'ok' }));
 
