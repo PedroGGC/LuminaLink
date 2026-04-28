@@ -5,6 +5,24 @@ import { isDomainBlocked } from '../utils/blacklist.js';
 import { hashPassword } from '../utils/password.js';
 import { getRedis } from '../db/redis.js';
 
+export interface CreateLinkInput {
+  originalUrl: string;
+  customSlug?: string;
+  password?: string;
+}
+
+export interface LinkResponse {
+  id: string;
+  shortCode: string;
+  shortUrl: string;
+  originalUrl: string;
+  clickCount: number;
+  hasPassword: boolean;
+  expiresAt: number | null;
+  maxClicks?: number;
+  createdAt?: number;
+}
+
 const PORT = parseInt(process.env.PORT || '3002');
 const CACHE_TTL = 3600;
 
@@ -16,9 +34,9 @@ function mapLinkToResponse(link: any): LinkResponse {
     originalUrl: link.originalUrl,
     clickCount: link.clickCount || 0,
     hasPassword: Boolean(link.hasPassword),
-    expiresAt: link.expiresAt ? new Date(link.expiresAt) : undefined,
+    expiresAt: link.expiresAt ?? null,
     maxClicks: link.maxClicks || undefined,
-    createdAt: new Date(link.createdAt),
+    createdAt: link.createdAt,
   };
 }
 
@@ -63,7 +81,7 @@ export async function invalidateCache(shortCode: string): Promise<void> {
   }
 }
 
-export async function createLink(input: CreateLinkInput): Promise<LinkResponse> {
+export async function createLink(input: CreateLinkInput, userId?: string): Promise<LinkResponse> {
   const { originalUrl, customSlug, password } = input;
 
   try {
@@ -106,12 +124,15 @@ export async function createLink(input: CreateLinkInput): Promise<LinkResponse> 
   }
 
   const now = Date.now();
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
   db.insert(linksTable).values({
+    userId: userId || 'anonymous',
     shortCode,
     originalUrl,
     customCode: isCustom ? 1 : 0,
     hasPassword: password ? 1 : 0,
     passwordHash: passwordHash || null,
+    expiresAt: now + SEVEN_DAYS,
     clickCount: 0,
     isActive: 1,
     createdAt: now,
@@ -154,7 +175,11 @@ export async function incrementClickCount(shortCode: string): Promise<void> {
     .run();
 }
 
-export async function updateLink(shortCode: string, originalUrl: string): Promise<LinkResponse | null> {
+export async function updateLink(shortCode: string, originalUrl: string, userId?: string): Promise<LinkResponse | null> {
+  const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  if (!existing) return null;
+  if (userId && existing.userId !== userId) return null;
+
   if (isDomainBlocked(originalUrl)) {
     throw new Error('DOMAIN_BLOCKED');
   }
@@ -172,16 +197,43 @@ export async function updateLink(shortCode: string, originalUrl: string): Promis
   return mapLinkToResponse(link);
 }
 
-export async function deleteLink(shortCode: string): Promise<boolean> {
+export async function deleteLink(shortCode: string, userId?: string): Promise<boolean> {
   const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
   if (!existing) return false;
+  if (userId && existing.userId !== userId) return false;
 
-  db.update(linksTable)
-    .set({ isActive: 0 })
+  db.delete(linksTable)
     .where(eq(linksTable.shortCode, shortCode))
     .run();
 
   await invalidateCache(shortCode);
 
   return true;
+}
+
+export async function getLinksByUser(userId: string): Promise<LinkResponse[]> {
+  const userLinks = db.select().from(linksTable)
+    .where(eq(linksTable.userId, userId))
+    .all();
+  return userLinks.filter(l => l.isActive).map(mapLinkToResponse);
+}
+
+export async function cleanupExpiredLinks(): Promise<number> {
+  const now = Date.now();
+  const expired = db.select().from(linksTable)
+    .where(eq(linksTable.isActive, 1))
+    .all()
+    .filter(l => l.expiresAt && l.expiresAt < now);
+  
+  for (const l of expired) {
+    db.delete(linksTable)
+      .where(eq(linksTable.shortCode, l.shortCode))
+      .run();
+    await invalidateCache(l.shortCode);
+  }
+  
+  if (expired.length > 0) {
+    console.log(`[Cleanup] Removed ${expired.length} expired links`);
+  }
+  return expired.length;
 }
