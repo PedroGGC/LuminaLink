@@ -34,9 +34,9 @@ function mapLinkToResponse(link: any): LinkResponse {
     originalUrl: link.originalUrl,
     clickCount: link.clickCount || 0,
     hasPassword: Boolean(link.hasPassword),
-    expiresAt: link.expiresAt ?? null,
+    expiresAt: link.expiresAt?.getTime() ?? null,
     maxClicks: link.maxClicks || undefined,
-    createdAt: link.createdAt,
+    createdAt: link.createdAt?.getTime() ?? null,
   };
 }
 
@@ -106,7 +106,7 @@ export async function createLink(input: CreateLinkInput, userId?: string): Promi
     if (!isValidSlug(customSlug)) {
       throw new Error('INVALID_SLUG');
     }
-    const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, customSlug)).get();
+    const existing = await db.select().from(linksTable).where(eq(linksTable.shortCode, customSlug)).limit(1).then(res => res[0]);
     if (existing) {
       throw new Error('SLUG_TAKEN');
     }
@@ -118,28 +118,28 @@ export async function createLink(input: CreateLinkInput, userId?: string): Promi
     do {
       shortCode = generateSlug();
       attempts++;
-      const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+      const existing = await db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).limit(1).then(res => res[0]);
       found = !!existing;
     } while (attempts < 10 && found);
   }
 
-  const now = Date.now();
+  const now = new Date();
   const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-  db.insert(linksTable).values({
+  await db.insert(linksTable).values({
     userId: userId || 'anonymous',
     shortCode,
     originalUrl,
     customCode: isCustom ? 1 : 0,
     hasPassword: password ? 1 : 0,
     passwordHash: passwordHash || null,
-    expiresAt: now + SEVEN_DAYS,
+    expiresAt: new Date(now.getTime() + SEVEN_DAYS),
     clickCount: 0,
     isActive: 1,
     createdAt: now,
     updatedAt: now,
-  }).run();
+  });
 
-  const newLink = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  const newLink = await db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).limit(1).then(res => res[0]);
   if (!newLink) throw new Error('CREATE_FAILED');
 
   await cacheUrl(shortCode, originalUrl);
@@ -148,7 +148,7 @@ export async function createLink(input: CreateLinkInput, userId?: string): Promi
 }
 
 export async function getLinkBySlug(shortCode: string): Promise<LinkResponse | null> {
-  const link = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  const link = await db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).limit(1).then(res => res[0]);
   if (!link) return null;
   if (!link.isActive) return null;
 
@@ -166,17 +166,16 @@ export async function getLinkBySlug(shortCode: string): Promise<LinkResponse | n
 }
 
 export async function incrementClickCount(shortCode: string): Promise<void> {
-  const link = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  const link = await db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).limit(1).then(res => res[0]);
   if (!link) return;
 
-  db.update(linksTable)
+  await db.update(linksTable)
     .set({ clickCount: (link.clickCount || 0) + 1 })
-    .where(eq(linksTable.shortCode, shortCode))
-    .run();
+    .where(eq(linksTable.shortCode, shortCode));
 }
 
 export async function updateLink(shortCode: string, originalUrl: string, userId?: string): Promise<LinkResponse | null> {
-  const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  const existing = await db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).limit(1).then(res => res[0]);
   if (!existing) return null;
   if (userId && existing.userId !== userId) return null;
 
@@ -184,27 +183,25 @@ export async function updateLink(shortCode: string, originalUrl: string, userId?
     throw new Error('DOMAIN_BLOCKED');
   }
 
-  db.update(linksTable)
-    .set({ originalUrl, isActive: 1, updatedAt: Date.now() })
-    .where(eq(linksTable.shortCode, shortCode))
-    .run();
+  await db.update(linksTable)
+    .set({ originalUrl, isActive: 1, updatedAt: new Date() })
+    .where(eq(linksTable.shortCode, shortCode));
 
   await cacheUrl(shortCode, originalUrl);
 
-  const link = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  const link = await db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).limit(1).then(res => res[0]);
   if (!link) return null;
 
   return mapLinkToResponse(link);
 }
 
 export async function deleteLink(shortCode: string, userId?: string): Promise<boolean> {
-  const existing = db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).get();
+  const existing = await db.select().from(linksTable).where(eq(linksTable.shortCode, shortCode)).limit(1).then(res => res[0]);
   if (!existing) return false;
   if (userId && existing.userId !== userId) return false;
 
-  db.delete(linksTable)
-    .where(eq(linksTable.shortCode, shortCode))
-    .run();
+  await db.delete(linksTable)
+    .where(eq(linksTable.shortCode, shortCode));
 
   await invalidateCache(shortCode);
 
@@ -212,23 +209,20 @@ export async function deleteLink(shortCode: string, userId?: string): Promise<bo
 }
 
 export async function getLinksByUser(userId: string): Promise<LinkResponse[]> {
-  const userLinks = db.select().from(linksTable)
-    .where(eq(linksTable.userId, userId))
-    .all();
-  return userLinks.filter(l => l.isActive).map(mapLinkToResponse);
+  const userLinks = await db.select().from(linksTable)
+    .where(eq(linksTable.userId, userId));
+  return userLinks.filter((l: any) => l.isActive).map(mapLinkToResponse);
 }
 
 export async function cleanupExpiredLinks(): Promise<number> {
-  const now = Date.now();
-  const expired = db.select().from(linksTable)
-    .where(eq(linksTable.isActive, 1))
-    .all()
-    .filter(l => l.expiresAt && l.expiresAt < now);
+  const now = new Date();
+  const userLinks = await db.select().from(linksTable)
+    .where(eq(linksTable.isActive, 1));
+  const expired = userLinks.filter((l: any) => l.expiresAt && l.expiresAt < now);
   
   for (const l of expired) {
-    db.delete(linksTable)
-      .where(eq(linksTable.shortCode, l.shortCode))
-      .run();
+    await db.delete(linksTable)
+      .where(eq(linksTable.shortCode, l.shortCode));
     await invalidateCache(l.shortCode);
   }
   

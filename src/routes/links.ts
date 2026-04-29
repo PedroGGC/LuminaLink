@@ -3,18 +3,18 @@ import { eq } from 'drizzle-orm';
 import { db, links, sessions } from '../db/index.js';
 import { createLink, getLinkBySlug, updateLink, deleteLink, getLinksByUser } from '../services/link.service.js';
 
-function getUserId(request: FastifyRequest): string | null {
+async function getUserId(request: FastifyRequest): Promise<string | null> {
   const authHeader = request.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) return null;
   const token = authHeader.slice(7);
-  const session = db.select().from(sessions).where(eq(sessions.token, token)).get();
-  if (!session || (session.expiresAt ?? 0) < Date.now()) return null;
+  const session = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1).then(res => res[0]);
+  if (!session || (session.expiresAt ?? new Date(0)) < new Date()) return null;
   return session.userId;
 }
 
 export async function linkRoutes(fastify: FastifyInstance) {
   fastify.get('/api/links', async (request, reply) => {
-    const userId = getUserId(request);
+    const userId = await getUserId(request);
     if (!userId) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }
@@ -23,7 +23,7 @@ export async function linkRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/api/links', async (request, reply) => {
-    const realUserId = getUserId(request);
+    const realUserId = await getUserId(request);
     
     const { originalUrl, customSlug, password, anonymousId } = request.body as { originalUrl: string; customSlug?: string; password?: string; anonymousId?: string };
     
@@ -54,7 +54,7 @@ export async function linkRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/api/links/claim', async (request, reply) => {
-    const userId = getUserId(request);
+    const userId = await getUserId(request);
     if (!userId) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }
@@ -64,10 +64,9 @@ export async function linkRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'anonymousId is required' });
     }
 
-    db.update(links)
+    await db.update(links)
       .set({ userId })
-      .where(eq(links.userId, anonymousId))
-      .run();
+      .where(eq(links.userId, anonymousId));
 
     return { success: true };
   });
@@ -84,7 +83,7 @@ export async function linkRoutes(fastify: FastifyInstance) {
   });
 
   fastify.put('/api/links/:shortCode', async (request, reply) => {
-    const userId = getUserId(request);
+    const userId = await getUserId(request);
     if (!userId) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }
@@ -111,7 +110,7 @@ export async function linkRoutes(fastify: FastifyInstance) {
   });
 
   fastify.delete('/api/links/:shortCode', async (request, reply) => {
-    const userId = getUserId(request);
+    const userId = await getUserId(request);
     if (!userId) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }

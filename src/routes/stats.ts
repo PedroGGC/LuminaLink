@@ -12,60 +12,55 @@ export async function statsRoutes(fastify: FastifyInstance) {
       return reply.status(404).send({ error: 'Link not found' });
     }
 
-    const totalClicks = db.select({ count: sql<number>`count(*)` }).from(clicks)
-      .where(eq(clicks.linkId, link.id)).get();
+    const totalClicks = await db.select({ count: sql<number>`count(*)::int` }).from(clicks)
+      .where(eq(clicks.linkId, link.id)).limit(1).then(res => res[0]);
 
-    const clicksByReferrer = db.select({
+    const clicksByReferrer = await db.select({
       referrer: clicks.referrer,
-      count: sql<number>`count(*)`,
+      count: sql<number>`count(*)::int`,
     }).from(clicks)
       .where(eq(clicks.linkId, link.id))
-      .groupBy(clicks.referrer)
-      .all();
+      .groupBy(clicks.referrer);
 
-    const clicksByDevice = db.select({
+    const clicksByDevice = await db.select({
       device: clicks.device,
-      count: sql<number>`count(*)`,
+      count: sql<number>`count(*)::int`,
     }).from(clicks)
       .where(eq(clicks.linkId, link.id))
-      .groupBy(clicks.device)
-      .all();
+      .groupBy(clicks.device);
 
-    const clicksByCountry = db.select({
+    const clicksByCountry = await db.select({
       country: clicks.country,
-      count: sql<number>`count(*)`,
+      count: sql<number>`count(*)::int`,
     }).from(clicks)
       .where(eq(clicks.linkId, link.id))
-      .groupBy(clicks.country)
-      .all();
+      .groupBy(clicks.country);
 
-    const clicksByOs = db.select({
+    const clicksByOs = await db.select({
       os: clicks.os,
-      count: sql<number>`count(*)`,
+      count: sql<number>`count(*)::int`,
     }).from(clicks)
       .where(eq(clicks.linkId, link.id))
-      .groupBy(clicks.os)
-      .all();
+      .groupBy(clicks.os);
 
-    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(Date.now() - (30 * 24 * 60 * 60 * 1000));
     
-    const clicksOverTime = db.select({
-      date: sql<string>`date(clickedAt, 'unixepoch')`,
-      count: sql<number>`count(*)`,
+    const clicksOverTime = await db.select({
+      date: sql<string>`to_char(${clicks.clickedAt}, 'YYYY-MM-DD')`,
+      count: sql<number>`count(*)::int`,
     }).from(clicks)
       .where(sql`${clicks.linkId} = ${link.id} AND ${clicks.clickedAt} >= ${thirtyDaysAgo}`)
-      .groupBy(sql`date(clickedAt, 'unixepoch')`)
-      .orderBy(sql`date(clickedAt, 'unixepoch')`)
-      .all();
+      .groupBy(sql`to_char(${clicks.clickedAt}, 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(${clicks.clickedAt}, 'YYYY-MM-DD')`);
 
     return {
       shortCode,
       totalClicks: totalClicks?.count || 0,
-      clicksByReferrer: clicksByReferrer.map(r => ({ referrer: r.referrer || 'direct', count: r.count || 0 })),
-      clicksByDevice: clicksByDevice.map(d => ({ device: d.device || 'unknown', count: d.count || 0 })),
-      clicksByCountry: clicksByCountry.map(c => ({ country: c.country || 'unknown', count: c.count || 0 })),
-      clicksByOs: clicksByOs.map(o => ({ os: o.os || 'unknown', count: o.count || 0 })),
-      clicksOverTime: clicksOverTime.map(t => ({ date: t.date, count: t.count || 0 })),
+      clicksByReferrer: clicksByReferrer.map((r: any) => ({ referrer: r.referrer || 'direct', count: r.count || 0 })),
+      clicksByDevice: clicksByDevice.map((d: any) => ({ device: d.device || 'unknown', count: d.count || 0 })),
+      clicksByCountry: clicksByCountry.map((c: any) => ({ country: c.country || 'unknown', count: c.count || 0 })),
+      clicksByOs: clicksByOs.map((o: any) => ({ os: o.os || 'unknown', count: o.count || 0 })),
+      clicksOverTime: clicksOverTime.map((t: any) => ({ date: t.date, count: t.count || 0 })),
     };
   });
 }

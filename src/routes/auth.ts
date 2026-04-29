@@ -24,7 +24,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Email, name, and password are required' });
     }
 
-    const existing = await db.select().from(users).where(or(eq(users.email, email), eq(users.name, name))).get();
+    const existing = await db.select().from(users).where(or(eq(users.email, email), eq(users.name, name))).limit(1).then(res => res[0]);
     if (existing) {
       return reply.status(409).send({ error: 'Email or Username already registered' });
     }
@@ -36,15 +36,15 @@ export async function authRoutes(fastify: FastifyInstance) {
       name,
       passwordHash,
       plan: 'free',
-      createdAt: Date.now(),
-    }).returning().get();
+      createdAt: new Date(),
+    }).returning().then(res => res[0]);
 
     const token = generateToken();
     await db.insert(sessions).values({
       id: crypto.randomUUID(),
       userId: user.id,
       token,
-      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
 
     reply.status(201).send({ 
@@ -61,7 +61,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Email/Username and password are required' });
     }
 
-    const user = await db.select().from(users).where(or(eq(users.email, identifier), eq(users.name, identifier))).get();
+    const user = await db.select().from(users).where(or(eq(users.email, identifier), eq(users.name, identifier))).limit(1).then(res => res[0]);
     if (!user) {
       return reply.status(401).send({ error: 'Invalid credentials' });
     }
@@ -76,7 +76,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       id: crypto.randomUUID(),
       userId: user.id,
       token,
-      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     });
 
     reply.send({ 
@@ -92,13 +92,13 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
 
     const token = authHeader.slice(7);
-    const session = await db.select().from(sessions).where(eq(sessions.token, token)).get();
+    const session = await db.select().from(sessions).where(eq(sessions.token, token)).limit(1).then(res => res[0]);
     
-    if (!session || (session.expiresAt ?? 0) < Date.now()) {
+    if (!session || (session.expiresAt ?? new Date(0)) < new Date()) {
       return reply.status(401).send({ error: 'Unauthorized' });
     }
 
-    const user = await db.select().from(users).where(eq(users.id, session.userId)).get();
+    const user = await db.select().from(users).where(eq(users.id, session.userId)).limit(1).then(res => res[0]);
     if (!user) {
       return reply.status(401).send({ error: 'User not found' });
     }
