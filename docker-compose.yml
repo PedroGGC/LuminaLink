@@ -10,15 +10,31 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgresql://shorten:shorten@db:5432/shorten
+      - REDIS_URL=redis://redis:6379
+      - PORT=3000
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     command: sh -c "npm install && npm run dev"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /app/frontend
+    volumes:
+      - .:/app
+    ports:
+      - "5173:5173"
+    depends_on:
+      app:
+        condition: service_healthy
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
 
   db:
     image: postgres:15-alpine
@@ -35,6 +51,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
 
 volumes:
   postgres_data:
