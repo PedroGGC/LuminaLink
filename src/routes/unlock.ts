@@ -12,7 +12,7 @@ export async function unlockRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Password required' });
     }
 
-    const link = db.select().from(links).where(eq(links.shortCode, shortCode)).get();
+    const link = await db.select().from(links).where(eq(links.shortCode, shortCode)).limit(1).then(res => res[0]);
     if (!link) {
       return reply.status(404).send({ error: 'Link not found' });
     }

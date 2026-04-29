@@ -18,7 +18,7 @@ import { getRedis } from './db/redis.js';
 import { startClickWorker } from './services/click-worker.js';
 import { cleanupExpiredLinks } from './services/link.service.js';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const PORT = parseInt(process.env.PORT || '3002');
 const PUBLIC_ROOT = resolve('./src/public');

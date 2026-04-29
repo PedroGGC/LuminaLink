@@ -19,11 +19,13 @@ coverage/
 *.swo
 prisma/migrations/
 AGENTS.MD
-tests/
 preview.html
 preview.ts
 .mcp.json
 .opencode.json
 GEMINI.md
 test-redis-connection.js
+test-db.ts
 GeoLite2-City.mmdb
+EXPLANATION.md
+postgres_data/
