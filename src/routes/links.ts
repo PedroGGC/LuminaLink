@@ -23,12 +23,11 @@ export async function linkRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/api/links', async (request, reply) => {
-    const userId = getUserId(request);
-    if (!userId) {
-      return reply.status(401).send({ error: 'Unauthorized' });
-    }
-
-    const { originalUrl, customSlug, password } = request.body as { originalUrl: string; customSlug?: string; password?: string };
+    const realUserId = getUserId(request);
+    
+    const { originalUrl, customSlug, password, anonymousId } = request.body as { originalUrl: string; customSlug?: string; password?: string; anonymousId?: string };
+    
+    const userId = realUserId || anonymousId || 'anonymous';
 
     if (!originalUrl) {
       return reply.status(400).send({ error: 'originalUrl is required' });
@@ -52,6 +51,25 @@ export async function linkRoutes(fastify: FastifyInstance) {
       }
       throw err;
     }
+  });
+
+  fastify.post('/api/links/claim', async (request, reply) => {
+    const userId = getUserId(request);
+    if (!userId) {
+      return reply.status(401).send({ error: 'Unauthorized' });
+    }
+
+    const { anonymousId } = request.body as { anonymousId?: string };
+    if (!anonymousId) {
+      return reply.status(400).send({ error: 'anonymousId is required' });
+    }
+
+    db.update(links)
+      .set({ userId })
+      .where(eq(links.userId, anonymousId))
+      .run();
+
+    return { success: true };
   });
 
   fastify.get('/api/links/:shortCode', async (request, reply) => {

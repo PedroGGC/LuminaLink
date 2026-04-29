@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface Props {
   onLoginClick: () => void;
@@ -8,17 +8,61 @@ interface Props {
 
 export default function MinimalHome({ onLoginClick, isDark, setIsDark }: Props) {
   const [url, setUrl] = useState('');
+  const [shortenedLink, setShortenedLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!localStorage.getItem('anonymousId')) {
+      localStorage.setItem('anonymousId', crypto.randomUUID());
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
-    // Require auth to create links
-    onLoginClick();
+    
+    setIsLoading(true);
+    setShortenedLink(null);
+    setCopied(false);
+    
+    try {
+      const anonymousId = localStorage.getItem('anonymousId');
+      const response = await fetch('/api/links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ originalUrl: url, anonymousId })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setShortenedLink(data.shortUrl);
+        setUrl('');
+      } else {
+        console.error('Error creating link:', data.error);
+        // Optional: Show error to user
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (shortenedLink) {
+      navigator.clipboard.writeText(shortenedLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
     <div 
-      className="min-h-[100dvh] flex flex-col items-center justify-center p-6 bg-bg-base dark:bg-d-bg-base text-text-main dark:text-d-text-main transition-colors duration-300" 
+      className="min-h-[100dvh] flex flex-col items-center justify-center p-6 bg-bg-base dark:bg-[#111111] text-text-main dark:text-d-text-main transition-colors duration-300" 
       style={{ fontFamily: "'Geist Sans', 'SF Pro Display', 'Helvetica Neue', sans-serif" }}
     >
       {/* Navbar */}
@@ -32,7 +76,7 @@ export default function MinimalHome({ onLoginClick, isDark, setIsDark }: Props) 
         <div className="flex items-center gap-4">
           <button 
             onClick={() => setIsDark(!isDark)}
-            className="text-sm font-medium text-text-muted dark:text-d-text-muted hover:text-text-main dark:hover:text-d-text-main transition-colors flex items-center"
+            className="text-sm font-medium text-[#787774] hover:text-[#111111] dark:text-[#A0A0A0] dark:hover:text-white transition-colors flex items-center"
             title="Toggle Theme"
           >
             <span className="material-symbols-outlined" style={{fontSize: 20}}>
@@ -41,64 +85,94 @@ export default function MinimalHome({ onLoginClick, isDark, setIsDark }: Props) 
           </button>
           <button 
             onClick={onLoginClick}
-            className="text-sm font-medium px-4 py-1.5 border-[1.5px] border-text-main dark:border-d-border-subtle rounded-[6px] shadow-[2px_2px_0px_#111111] dark:shadow-none hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_#111111] dark:hover:shadow-none dark:hover:bg-d-bg-surface transition-all duration-200 active:translate-y-0 active:shadow-[0px_0px_0px_#111111]"
+            className="text-sm font-medium px-4 py-1.5 border border-[#EAEAEA] dark:border-[#333333] rounded-[6px] hover:bg-[#F9F9F8] dark:hover:bg-[#222222] transition-colors"
           >
             Log in
           </button>
         </div>
       </header>
 
-      {/* Ambient background (Opacity 0.03) */}
-      <div className="fixed inset-0 pointer-events-none -z-10 flex items-center justify-center overflow-hidden opacity-[0.03] dark:opacity-[0.05]">
+      {/* Ambient background */}
+      <div className="fixed inset-0 pointer-events-none -z-10 flex items-center justify-center overflow-hidden opacity-[0.03]">
         <div className="w-[800px] h-[800px] rounded-full bg-[radial-gradient(circle,#111_0%,transparent_70%)] dark:bg-[radial-gradient(circle,#fff_0%,transparent_70%)] blur-3xl mix-blend-multiply dark:mix-blend-screen" />
       </div>
 
-      <main className="w-full max-w-3xl mx-auto flex flex-col items-center animate-[fade-in-up_600ms_cubic-bezier(0.16,1,0.3,1)]">
+      <main className="w-full max-w-3xl mx-auto flex flex-col items-center animate-[fade-in-up_600ms_cubic-bezier(0.16,1,0.3,1)] pt-24 pb-32">
         
         {/* Editorial Heading */}
         <h1 
-          className="text-4xl md:text-6xl tracking-[-0.03em] leading-[1.1] mb-6 text-center" 
-          style={{ fontFamily: "'Newsreader', 'Playfair Display', 'Lyon Text', serif" }}
+          className="text-4xl md:text-6xl tracking-tight leading-[1.1] mb-6 text-center text-[#111111] dark:text-white" 
+          style={{ fontFamily: "'Newsreader', 'Playfair Display', 'Lyon Text', serif", letterSpacing: '-0.03em' }}
         >
           Clean links. <br />
           Focus on what matters.
         </h1>
         
         {/* Subtitle */}
-        <p className="text-text-muted dark:text-d-text-muted mb-12 text-center text-lg leading-[1.6] max-w-xl">
+        <p className="text-[#787774] dark:text-[#A0A0A0] mb-12 text-center text-lg leading-[1.6] max-w-xl">
           Paste your long URL below. Create short, trackable, and professional links. No ads, no noise.
         </p>
 
         {/* Input & Button Component */}
         <form onSubmit={handleSubmit} className="w-full max-w-xl flex flex-col gap-4">
-          <div className="relative flex items-center bg-bg-surface dark:bg-d-bg-surface border-[1.5px] border-text-main dark:border-d-border-subtle shadow-[4px_4px_0px_#111111] dark:shadow-none rounded-[8px] p-1.5 transition-all duration-300 focus-within:-translate-y-0.5 focus-within:shadow-[6px_6px_0px_#111111] dark:focus-within:border-d-text-main dark:focus-within:shadow-none">
+          <div className="relative flex items-center bg-[#FFFFFF] dark:bg-[#1A1A1A] border border-[#EAEAEA] dark:border-[#333333] rounded-[8px] p-1.5 transition-colors focus-within:border-[#111111] dark:focus-within:border-[#555555]">
             <input
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://your-long-url-here.com"
               required
-              className="flex-1 bg-transparent px-4 py-2.5 outline-none text-text-main dark:text-d-text-main placeholder:text-text-muted dark:placeholder:text-d-text-muted text-base"
+              className="flex-1 bg-transparent px-4 py-2.5 outline-none border-none focus:border-transparent focus:outline-none focus:ring-0 focus:ring-offset-0 shadow-none text-[#111111] dark:text-[#FFFFFF] placeholder:text-[#A0A0A0] dark:placeholder:text-[#666666] text-base"
+              style={{ boxShadow: 'none' }}
             />
             <button
               type="submit"
-              disabled={!url}
-              className="group flex items-center gap-2 bg-text-main dark:bg-d-text-main text-bg-base dark:text-d-bg-base px-6 py-2.5 rounded-[4px] text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#333333] dark:hover:bg-[#E0E0E0] active:scale-[0.96]"
+              disabled={!url || isLoading}
+              className="group flex items-center justify-center min-w-[100px] gap-2 bg-[#111111] dark:bg-[#FFFFFF] text-white dark:text-[#111111] px-6 py-2.5 rounded-[6px] text-sm font-medium transition-transform duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#333333] dark:hover:bg-[#EAEAEA] active:scale-[0.98]"
             >
-              Shorten
-              <span className="material-symbols-outlined text-sm transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+              {isLoading ? (
+                <span className="material-symbols-outlined text-sm animate-spin">sync</span>
+              ) : (
+                <>
+                  Shorten
+                  <span className="material-symbols-outlined text-sm transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+                </>
+              )}
             </button>
           </div>
         </form>
 
+        {/* Result Box */}
+        {shortenedLink && (
+          <div className="mt-8 w-full max-w-xl flex flex-col items-center animate-[fade-in-up_400ms_cubic-bezier(0.16,1,0.3,1)]">
+            <div className="w-full flex items-center justify-between p-4 rounded-[8px] bg-[#EDF3EC] dark:bg-[#1C261C] border border-[#D5E5D4] dark:border-[#2A3A2A]">
+              <span className="text-[#346538] dark:text-[#7FD186] font-medium truncate pr-4">{shortenedLink}</span>
+              <button 
+                onClick={handleCopy}
+                className="flex items-center justify-center p-2 rounded-[4px] bg-[#FFFFFF] dark:bg-[#111111] border border-[#D5E5D4] dark:border-[#2A3A2A] text-[#346538] dark:text-[#7FD186] hover:scale-95 transition-transform"
+                title="Copy link"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                  {copied ? 'check' : 'content_copy'}
+                </span>
+              </button>
+            </div>
+            <p className="mt-4 text-sm text-[#787774] dark:text-[#A0A0A0]">
+              <button onClick={onLoginClick} className="underline hover:text-[#111111] dark:hover:text-white transition-colors">Log in</button> to get more insights about your links.
+            </p>
+          </div>
+        )}
+
         {/* Keystroke Micro-UI */}
-        <div className="mt-12 flex items-center gap-2 text-xs text-text-muted dark:text-d-text-muted">
-          <span>Press</span>
-          <kbd className="px-1.5 py-0.5 bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle rounded-[4px] font-mono text-text-main dark:text-d-text-main">
-            Enter
-          </kbd>
-          <span>to shorten</span>
-        </div>
+        {!shortenedLink && (
+          <div className="mt-12 flex items-center gap-2 text-xs text-[#787774] dark:text-[#A0A0A0]">
+            <span>Press</span>
+            <kbd className="px-1.5 py-0.5 bg-[#F7F6F3] dark:bg-[#222222] border border-[#EAEAEA] dark:border-[#333333] rounded-[4px] font-mono text-[#111111] dark:text-white">
+              Enter
+            </kbd>
+            <span>to shorten</span>
+          </div>
+        )}
 
       </main>
 
@@ -110,6 +184,9 @@ export default function MinimalHome({ onLoginClick, isDark, setIsDark }: Props) 
         }
         .animate-\\[fade-in-up_600ms_cubic-bezier\\(0\\.16\\,1\\,0\\.3\\,1\\)\\] {
           animation: fade-in-up 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-\\[fade-in-up_400ms_cubic-bezier\\(0\\.16\\,1\\,0\\.3\\,1\\)\\] {
+          animation: fade-in-up 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
       `}} />
     </div>

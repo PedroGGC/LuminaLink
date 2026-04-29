@@ -42,6 +42,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const claimLinks = async (tokenStr: string) => {
+    const anonymousId = localStorage.getItem('anonymousId')
+    if (anonymousId) {
+      try {
+        await fetch('/api/links/claim', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenStr}`
+          },
+          body: JSON.stringify({ anonymousId }),
+        })
+        localStorage.removeItem('anonymousId')
+      } catch (err) {
+        console.error('Failed to claim links', err)
+      }
+    }
+  }
+
   const login = async (identifier: string, password: string) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -52,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!res.ok) throw new Error(data.error || 'Falha no login')
     setUser(data.user); setToken(data.token)
     localStorage.setItem('token', data.token)
+    await claimLinks(data.token)
   }
 
   const register = async (email: string, name: string, password: string) => {
@@ -64,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!res.ok) throw new Error(data.error || 'Falha no cadastro')
     setUser(data.user); setToken(data.token)
     localStorage.setItem('token', data.token)
+    await claimLinks(data.token)
   }
 
   const logout = () => {

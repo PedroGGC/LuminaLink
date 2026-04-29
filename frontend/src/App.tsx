@@ -49,6 +49,14 @@ function App() {
     }
   }, [isDark]);
 
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (import.meta.env.DEV && path !== '/' && path !== '/index.html') {
+      // If someone visits a short link on the Vite dev server (port 5173), redirect to the backend
+      window.location.href = `http://localhost:3002${path}`;
+    }
+  }, []);
+
   const loadStats = () => {
     if (!token) return
     fetch(`/api/dashboard/stats?range=${timeFilter}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -160,7 +168,7 @@ function App() {
             {/* Page header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
               <div>
-                <h2 className="text-3xl font-editorial font-bold text-text-main dark:text-d-text-main tracking-tight mb-1">Overview</h2>
+                <h2 className="text-2xl font-editorial font-bold text-text-main dark:text-d-text-main tracking-tight mb-1">Overview</h2>
                 <p className="text-text-muted dark:text-d-text-muted text-sm">Track your links performance.</p>
               </div>
             </div>
@@ -168,29 +176,29 @@ function App() {
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Total Links */}
-              <div className="bg-bg-surface dark:bg-d-bg-surface border border-border-subtle dark:border-d-border-subtle rounded-[8px] p-6 relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-start mb-4">
                   <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle flex items-center justify-center">
                     <span className="material-symbols-outlined text-text-main dark:text-d-text-main text-sm">link</span>
                   </div>
                 </div>
                 <p className="text-text-muted dark:text-d-text-muted text-xs uppercase tracking-[0.05em] mb-1 font-medium">Links Created</p>
-                <h3 className="text-3xl font-editorial font-bold text-text-main dark:text-d-text-main">{stats ? fmt(stats.totalLinks) : '—'}</h3>
+                <h3 className="text-2xl font-editorial font-bold text-text-main dark:text-d-text-main">{stats ? fmt(stats.totalLinks) : '—'}</h3>
               </div>
 
               {/* Total Clicks */}
-              <div className="bg-bg-surface dark:bg-d-bg-surface border border-border-subtle dark:border-d-border-subtle rounded-[8px] p-6 relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-start mb-4">
                   <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle flex items-center justify-center">
                     <span className="material-symbols-outlined text-text-main dark:text-d-text-main text-sm">ads_click</span>
                   </div>
                 </div>
                 <p className="text-text-muted dark:text-d-text-muted text-xs uppercase tracking-[0.05em] mb-1 font-medium">Total Clicks</p>
-                <h3 className="text-3xl font-editorial font-bold text-text-main dark:text-d-text-main">{stats ? fmt(stats.totalClicks) : '—'}</h3>
+                <h3 className="text-2xl font-editorial font-bold text-text-main dark:text-d-text-main">{stats ? fmt(stats.totalClicks) : '—'}</h3>
               </div>
 
               {/* Top Link */}
-              <div className="bg-bg-surface dark:bg-d-bg-surface border border-border-subtle dark:border-d-border-subtle rounded-[8px] p-6 relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-start mb-4">
                   <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle flex items-center justify-center">
                     <span className="material-symbols-outlined text-text-main dark:text-d-text-main text-sm">military_tech</span>
@@ -211,7 +219,7 @@ function App() {
             {/* Chart + Recent Links */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Click Traffic */}
-              <div className="lg:col-span-2 bg-bg-surface dark:bg-d-bg-surface border-[1.5px] border-text-main dark:border-d-border-subtle shadow-[4px_4px_0px_#111111] dark:shadow-none rounded-[8px] p-6 relative">
+              <div className="lg:col-span-2 bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-base font-medium text-text-main dark:text-d-text-main">Click Traffic</h3>
                   <div className="flex items-center gap-1 bg-bg-surface dark:bg-d-bg-surface border border-border-subtle dark:border-d-border-subtle p-1 rounded-[6px]">
@@ -242,7 +250,7 @@ function App() {
               </div>
 
               {/* Recent Links */}
-              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1.5px] border-text-main dark:border-d-border-subtle shadow-[4px_4px_0px_#111111] dark:shadow-none rounded-[8px] p-6 flex flex-col relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 flex flex-col relative">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-base font-medium text-text-main dark:text-d-text-main">Recent Links</h3>
                   <button className="text-text-muted dark:text-d-text-muted text-xs hover:text-text-main dark:hover:text-d-text-main">See All</button>
@@ -264,23 +272,87 @@ function App() {
             </div>
 
             {/* Map Row */}
-            {stats && stats.topLocations && stats.topLocations.length > 0 && (
-              <div className="bg-bg-surface dark:bg-d-bg-surface border border-border-subtle dark:border-d-border-subtle rounded-[8px] p-6 relative">
+            {stats && (
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-base font-medium text-text-main dark:text-d-text-main">Global Clicks</h3>
+                  <span className="text-xs text-text-muted dark:text-d-text-muted font-mono">
+                    {stats.topLocations?.length ?? 0} {(stats.topLocations?.length ?? 0) === 1 ? 'country' : 'countries'}
+                  </span>
                 </div>
-                <div className="w-full flex items-center justify-center">
-                  <WorldMap data={stats.topLocations} />
-                </div>
-                <div className="mt-4 flex gap-4 overflow-x-auto pb-2 justify-center">
-                  {stats.topLocations.map((loc, i) => (
-                    <div key={i} className="flex items-center gap-2 shrink-0">
-                      <div className="w-2 h-2 rounded-full" style={{backgroundColor: `rgba(16, 185, 129, ${Math.max(0.2, loc.count / Math.max(...stats.topLocations.map(d=>d.count)))})`}} />
-                      <span className="text-xs text-text-main dark:text-d-text-main font-medium">{loc.country}</span>
-                      <span className="text-xs text-text-muted dark:text-d-text-muted">{loc.percent}%</span>
+
+                {(!stats.topLocations || stats.topLocations.length === 0) ? (
+                  /* Empty state */
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <span className="material-symbols-outlined text-text-muted dark:text-d-text-muted" style={{fontSize: 40}}>public</span>
+                    <p className="text-text-muted dark:text-d-text-muted text-sm">No click data yet.</p>
+                    <p className="text-text-muted dark:text-d-text-muted text-xs">Share your links — clicks will appear here with country &amp; device info.</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Map */}
+                    <div className="flex-1 min-w-0">
+                      <WorldMap data={stats.topLocations} />
                     </div>
-                  ))}
-                </div>
+
+                    {/* Right panel */}
+                    <div className="lg:w-64 shrink-0 flex flex-col gap-6">
+
+                      {/* Top Countries */}
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.05em] font-medium text-text-muted dark:text-d-text-muted mb-3">Top Countries</p>
+                        <div className="space-y-2">
+                          {stats.topLocations.map((loc, i) => {
+                            const maxCount = Math.max(...stats.topLocations.map(d => d.count))
+                            const barW = Math.max(4, Math.round((loc.count / maxCount) * 100))
+                            return (
+                              <div key={i} className="flex items-center gap-3">
+                                <span className="text-xs text-text-muted dark:text-d-text-muted w-4 text-right shrink-0">{i + 1}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs font-medium text-text-main dark:text-d-text-main truncate">{loc.country}</span>
+                                    <span className="text-xs text-text-muted dark:text-d-text-muted shrink-0 ml-2">{loc.count} · {loc.percent}%</span>
+                                  </div>
+                                  <div className="h-1 bg-bg-muted dark:bg-d-bg-muted rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full bg-emerald-500"
+                                      style={{ width: `${barW}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Device Breakdown */}
+                      {stats.deviceBreakdown && stats.deviceBreakdown.length > 0 && (
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.05em] font-medium text-text-muted dark:text-d-text-muted mb-3">Devices</p>
+                          <div className="space-y-2">
+                            {stats.deviceBreakdown.map((d, i) => {
+                              const icon = d.device === 'mobile' ? 'smartphone' : d.device === 'tablet' ? 'tablet' : 'computer'
+                              return (
+                                <div key={i} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-text-muted dark:text-d-text-muted" style={{fontSize: 16}}>{icon}</span>
+                                    <span className="text-xs text-text-main dark:text-d-text-main capitalize">{d.device}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-text-muted dark:text-d-text-muted">{d.count}</span>
+                                    <span className="text-xs font-mono bg-bg-muted dark:bg-d-bg-muted px-1.5 py-0.5 rounded-[4px] text-text-main dark:text-d-text-main">{d.percent}%</span>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

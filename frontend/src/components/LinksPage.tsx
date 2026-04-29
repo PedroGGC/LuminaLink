@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 interface LinkItem {
   id: string
   shortCode: string
+  shortUrl: string
   originalUrl: string
   clickCount: number
   hasPassword: boolean
@@ -42,6 +43,7 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
   const [links, setLinks] = useState<LinkItem[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteModal, setDeleteModal] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -63,7 +65,6 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
   }, [token])
 
   const handleDelete = async (shortCode: string) => {
-    if (!confirm('Delete this link?')) return
     setDeletingId(shortCode)
     try {
       await fetch(`/api/links/${shortCode}`, {
@@ -72,6 +73,7 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
       })
       setLinks(prev => prev.filter(l => l.shortCode !== shortCode))
       onStatsChange?.()
+      setDeleteModal(null)
     } finally {
       setDeletingId(null)
     }
@@ -95,7 +97,7 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2">
         <div>
-          <h2 className="text-3xl font-editorial font-bold text-text-main dark:text-d-text-main tracking-tight mb-1">My Links</h2>
+          <h2 className="text-2xl font-editorial font-bold text-text-main dark:text-d-text-main tracking-tight mb-1">My Links</h2>
           <p className="text-text-muted dark:text-d-text-muted text-sm">{links.length} link{links.length !== 1 ? 's' : ''} registered</p>
         </div>
       </div>
@@ -125,10 +127,10 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
       ) : (
         <div className="space-y-3">
           {filtered.map(l => {
-            const shortUrl = `${baseUrl}/${l.shortCode}`
+            const shortUrl = l.shortUrl || `${window.location.origin}/${l.shortCode}`
             const isExpired = l.expiresAt ? l.expiresAt < Date.now() : false
             return (
-              <div key={l.id} className={`bg-bg-surface dark:bg-d-bg-surface rounded-[8px] p-5 border-[1.5px] shadow-[4px_4px_0px_#111111] dark:shadow-none transition-all duration-200 ${isExpired ? 'border-red-500/20 opacity-60' : 'border-text-main dark:border-d-border-subtle hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_#111111] dark:hover:shadow-none'}`}>
+              <div key={l.id} className={`bg-bg-surface dark:bg-d-bg-surface rounded-[8px] p-5 border-[1px] transition-all duration-200 ${isExpired ? 'border-red-500/20 opacity-60' : 'border-border-subtle dark:border-d-border-subtle hover:border-text-main dark:hover:border-d-text-main hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:hover:shadow-none'}`}>
                 <div className="flex items-start gap-4">
                   {/* Icon */}
                   <div className="w-10 h-10 rounded-[6px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle flex items-center justify-center shrink-0 mt-0.5">
@@ -167,7 +169,7 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
                       </p>
                     </div>
                     <button
-                      onClick={() => handleDelete(l.shortCode)}
+                      onClick={() => setDeleteModal(l.shortCode)}
                       disabled={deletingId === l.shortCode}
                       className="w-8 h-8 rounded-[4px] flex items-center justify-center text-text-muted dark:text-d-text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all disabled:opacity-50 border border-transparent hover:border-red-200 dark:hover:border-red-500/20">
                       <span className="material-symbols-outlined" style={{fontSize:16}}>delete</span>
@@ -183,6 +185,24 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-[fade-in-up_200ms_ease-out]">
+          <div className="bg-bg-surface dark:bg-d-bg-surface rounded-[12px] w-full max-w-sm p-6 border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none">
+            <h3 className="text-xl font-editorial font-bold text-text-main dark:text-d-text-main mb-2">Delete link?</h3>
+            <p className="text-sm text-text-muted dark:text-d-text-muted mb-6 leading-relaxed">This action cannot be undone. Any traffic to this short link will be lost.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setDeleteModal(null)} className="px-4 py-2.5 rounded-[6px] text-sm font-medium text-text-muted dark:text-d-text-muted hover:bg-bg-muted dark:hover:bg-d-bg-muted transition-colors">
+                Cancel
+              </button>
+              <button onClick={() => handleDelete(deleteModal)} disabled={deletingId === deleteModal} className="px-4 py-2.5 bg-[#111111] dark:bg-white text-white dark:text-[#111111] rounded-[6px] text-sm font-medium hover:bg-[#333333] dark:hover:bg-[#EAEAEA] transition-colors disabled:opacity-50">
+                {deletingId === deleteModal ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
