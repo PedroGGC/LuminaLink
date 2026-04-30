@@ -106,7 +106,7 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
       <div className="relative">
         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-d-text-muted text-sm" style={{lineHeight:1}}>search</span>
         <input value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full bg-bg-surface dark:bg-d-bg-surface text-sm text-text-main dark:text-d-text-main placeholder:text-text-muted dark:placeholder:text-d-text-muted border border-border-subtle dark:border-d-border-subtle rounded-[6px] py-2.5 pl-9 pr-4 focus:border-text-main dark:focus:border-d-text-main outline-none transition-colors"
+          className="w-full bg-bg-surface dark:bg-d-bg-surface text-sm text-text-main dark:text-d-text-main placeholder:text-text-muted dark:placeholder:text-d-text-muted border border-[#A3A3A3] dark:border-[#2E2E2E] rounded-[6px] py-2.5 pl-9 pr-4 focus:border-text-main dark:focus:border-d-text-main outline-none transition-colors"
           placeholder="Search by original URL or short code..." />
       </div>
 
@@ -130,10 +130,10 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
             const shortUrl = l.shortUrl || `${window.location.origin}/${l.shortCode}`
             const isExpired = l.expiresAt ? l.expiresAt < Date.now() : false
             return (
-              <div key={l.id} className={`bg-bg-surface dark:bg-d-bg-surface rounded-[8px] p-5 border-[1px] transition-all duration-200 ${isExpired ? 'border-red-500/20 opacity-60' : 'border-border-subtle dark:border-d-border-subtle hover:border-text-main dark:hover:border-d-text-main hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:hover:shadow-none'}`}>
+              <div key={l.id} className={`bg-bg-surface dark:bg-d-bg-surface rounded-[8px] p-5 border-2 transition-all duration-200 ${isExpired ? 'border-red-500/20 opacity-60' : 'border-[#A3A3A3] dark:border-[#2E2E2E] hover:border-text-main dark:hover:border-d-text-main hover:-translate-y-0.5 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:hover:shadow-none'}`}>
                 <div className="flex items-start gap-4">
                   {/* Icon */}
-                  <div className="w-10 h-10 rounded-[6px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-10 h-10 rounded-[6px] bg-bg-muted dark:bg-d-bg-muted border border-[#A3A3A3] dark:border-[#2E2E2E] flex items-center justify-center shrink-0 mt-0.5">
                     {l.hasPassword
                       ? <span className="material-symbols-outlined text-text-main dark:text-d-text-main text-sm">lock</span>
                       : <span className="material-symbols-outlined text-text-muted dark:text-d-text-muted text-sm">link</span>}
@@ -178,7 +178,7 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
                 </div>
 
                 {/* Mobile expiry row */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border-subtle dark:border-d-border-subtle sm:hidden text-xs">
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#A3A3A3] dark:border-[#2E2E2E] sm:hidden text-xs">
                   <span className="text-text-muted dark:text-d-text-muted font-medium">{l.clickCount} clicks</span>
                   <span className={timeLeftColor(l.expiresAt)}>{timeLeft(l.expiresAt)}</span>
                 </div>
@@ -191,7 +191,7 @@ export function LinksPage({ onCreateClick, onStatsChange }: Props) {
       {/* Delete Modal */}
       {deleteModal && (
         <div className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-[fade-in-up_200ms_ease-out]">
-          <div className="bg-bg-surface dark:bg-d-bg-surface rounded-[12px] w-full max-w-sm p-6 border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none">
+          <div className="bg-bg-surface dark:bg-d-bg-surface rounded-[12px] w-full max-w-sm p-6 border-2 border-[#A3A3A3] dark:border-[#2E2E2E] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none">
             <h3 className="text-xl font-editorial font-bold text-text-main dark:text-d-text-main mb-2">Delete link?</h3>
             <p className="text-sm text-text-muted dark:text-d-text-muted mb-6 leading-relaxed">This action cannot be undone. Any traffic to this short link will be lost.</p>
             <div className="flex gap-3 justify-end">

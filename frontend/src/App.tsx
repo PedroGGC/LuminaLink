@@ -100,7 +100,7 @@ function App() {
         className="bg-bg-base dark:bg-d-bg-base text-text-main dark:text-d-text-main font-sans antialiased flex h-screen overflow-hidden transition-colors duration-300"
       >
         {/* Sidebar */}
-        <aside className="flex flex-col fixed left-0 top-0 h-full w-64 py-8 z-40 bg-bg-surface dark:bg-d-bg-surface border-r border-border-subtle dark:border-d-border-subtle hidden md:flex transition-colors duration-300">
+        <aside className="flex flex-col fixed left-0 top-0 h-full w-64 py-8 z-40 bg-bg-surface dark:bg-d-bg-surface border-r border-transparent dark:border-transparent hidden md:flex transition-colors duration-300">
           <div className="px-8 mb-10 flex items-center justify-between">
             <h1 className="text-xl font-editorial font-bold tracking-tight text-text-main dark:text-d-text-main">
               LuminaLink
@@ -131,7 +131,7 @@ function App() {
               Toggle Theme
             </button>
             
-            <div className="flex items-center gap-3 p-3 rounded-[8px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle">
+            <div className="flex items-center gap-3 p-3 rounded-[8px] bg-bg-muted dark:bg-d-bg-muted border border-[#A3A3A3] dark:border-[#2E2E2E]">
               <div className="w-8 h-8 rounded-[4px] bg-border-subtle dark:bg-d-border-subtle flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-text-muted dark:text-d-text-muted" style={{fontSize:18}}>person</span>
               </div>
@@ -149,7 +149,7 @@ function App() {
         {/* Main */}
         <main className="flex-1 flex flex-col md:ml-64 h-full relative">
           {/* Header */}
-          <header className="flex justify-between items-center px-8 h-16 w-full sticky top-0 z-30 bg-bg-base/80 dark:bg-d-bg-base/80 backdrop-blur-md border-b border-border-subtle dark:border-d-border-subtle">
+          <header className="flex justify-between items-center px-8 h-16 w-full sticky top-0 z-30 bg-bg-base/80 dark:bg-d-bg-base/80 backdrop-blur-md border-b border-transparent dark:border-transparent">
             <div className="hidden md:flex items-center">
             </div>
             <div className="flex items-center gap-4 ml-auto">
@@ -176,9 +176,9 @@ function App() {
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Total Links */}
-              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-2 border-[#A3A3A3] dark:border-[#2E2E2E] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-[#A3A3A3] dark:border-[#2E2E2E] flex items-center justify-center">
                     <span className="material-symbols-outlined text-text-main dark:text-d-text-main text-sm">link</span>
                   </div>
                 </div>
@@ -187,9 +187,9 @@ function App() {
               </div>
 
               {/* Total Clicks */}
-              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-2 border-[#A3A3A3] dark:border-[#2E2E2E] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-[#A3A3A3] dark:border-[#2E2E2E] flex items-center justify-center">
                     <span className="material-symbols-outlined text-text-main dark:text-d-text-main text-sm">ads_click</span>
                   </div>
                 </div>
@@ -198,9 +198,9 @@ function App() {
               </div>
 
               {/* Top Link */}
-              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-2 border-[#A3A3A3] dark:border-[#2E2E2E] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-border-subtle dark:border-d-border-subtle flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-[4px] bg-bg-muted dark:bg-d-bg-muted border border-[#A3A3A3] dark:border-[#2E2E2E] flex items-center justify-center">
                     <span className="material-symbols-outlined text-text-main dark:text-d-text-main text-sm">military_tech</span>
                   </div>
                 </div>
@@ -219,10 +219,10 @@ function App() {
             {/* Chart + Recent Links */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Click Traffic */}
-              <div className="lg:col-span-2 bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
+              <div className="lg:col-span-2 bg-bg-surface dark:bg-d-bg-surface border-2 border-[#A3A3A3] dark:border-[#2E2E2E] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-base font-medium text-text-main dark:text-d-text-main">Click Traffic</h3>
-                  <div className="flex items-center gap-1 bg-bg-surface dark:bg-d-bg-surface border border-border-subtle dark:border-d-border-subtle p-1 rounded-[6px]">
+                  <div className="flex items-center gap-1 bg-bg-surface dark:bg-d-bg-surface border border-[#A3A3A3] dark:border-[#2E2E2E] p-1 rounded-[6px]">
                     {['week','month','year'].map(f => (
                       <button key={f} onClick={() => setTimeFilter(f)}
                         className={`px-3 py-1 rounded-[4px] text-xs font-medium capitalize transition-all ${timeFilter===f ? 'bg-bg-muted dark:bg-d-bg-muted text-text-main dark:text-d-text-main' : 'text-text-muted dark:text-d-text-muted hover:text-text-main dark:hover:text-d-text-main'}`}>
@@ -250,7 +250,7 @@ function App() {
               </div>
 
               {/* Recent Links */}
-              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 flex flex-col relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-2 border-[#A3A3A3] dark:border-[#2E2E2E] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 flex flex-col relative">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-base font-medium text-text-main dark:text-d-text-main">Recent Links</h3>
                   <button className="text-text-muted dark:text-d-text-muted text-xs hover:text-text-main dark:hover:text-d-text-main">See All</button>
@@ -273,7 +273,7 @@ function App() {
 
             {/* Map Row */}
             {stats && (
-              <div className="bg-bg-surface dark:bg-d-bg-surface border-[1px] border-border-subtle dark:border-d-border-subtle shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
+              <div className="bg-bg-surface dark:bg-d-bg-surface border-2 border-[#A3A3A3] dark:border-[#2E2E2E] shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none rounded-[8px] p-6 relative">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-base font-medium text-text-main dark:text-d-text-main">Global Clicks</h3>
                   <span className="text-xs text-text-muted dark:text-d-text-muted font-mono">
@@ -369,7 +369,7 @@ function App() {
       {/* Create Link Modal */}
       {showCreate && isLoggedIn && (
         <div className="fixed inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-[fade-in-up_200ms_ease-out]">
-          <div className="bg-bg-surface dark:bg-d-bg-surface rounded-[12px] w-full max-w-lg p-8 border-[1.5px] border-text-main dark:border-d-border-subtle shadow-[8px_8px_0px_#111111] dark:shadow-xl">
+          <div className="bg-bg-surface dark:bg-d-bg-surface rounded-[12px] w-full max-w-lg p-8 border-[1.5px] border-text-main dark:border-[#2E2E2E] shadow-[8px_8px_0px_#111111] dark:shadow-xl">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl font-editorial font-bold text-text-main dark:text-d-text-main">Create Short Link</h3>
               <button onClick={() => { setShowCreate(false); setCreatedLink(null) }} className="text-text-muted dark:text-d-text-muted hover:text-text-main dark:hover:text-d-text-main">
@@ -380,28 +380,28 @@ function App() {
               <div>
                 <label className="block text-text-main dark:text-d-text-main text-sm font-medium mb-1.5">Destination URL</label>
                 <input type="url" value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://example.com" required
-                  className="w-full bg-bg-base dark:bg-d-bg-base border border-border-subtle dark:border-d-border-subtle rounded-[6px] py-2 px-3 text-text-main dark:text-d-text-main text-sm focus:outline-none focus:border-text-main dark:focus:border-d-text-main transition-colors" />
+                  className="w-full bg-bg-base dark:bg-d-bg-base border border-[#A3A3A3] dark:border-[#2E2E2E] rounded-[6px] py-2 px-3 text-text-main dark:text-d-text-main text-sm focus:outline-none focus:border-text-main dark:focus:border-d-text-main transition-colors" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-text-main dark:text-d-text-main text-sm font-medium mb-1.5">Slug (Optional)</label>
                   <input type="text" value={slug} onChange={e => setSlug(e.target.value)} placeholder="my-link"
-                    className="w-full bg-bg-base dark:bg-d-bg-base border border-border-subtle dark:border-d-border-subtle rounded-[6px] py-2 px-3 text-text-main dark:text-d-text-main text-sm focus:outline-none focus:border-text-main dark:focus:border-d-text-main transition-colors" />
+                    className="w-full bg-bg-base dark:bg-d-bg-base border border-[#A3A3A3] dark:border-[#2E2E2E] rounded-[6px] py-2 px-3 text-text-main dark:text-d-text-main text-sm focus:outline-none focus:border-text-main dark:focus:border-d-text-main transition-colors" />
                 </div>
                 <div>
                   <label className="block text-text-main dark:text-d-text-main text-sm font-medium mb-1.5">Password (Optional)</label>
                   <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="empty = public"
-                    className="w-full bg-bg-base dark:bg-d-bg-base border border-border-subtle dark:border-d-border-subtle rounded-[6px] py-2 px-3 text-text-main dark:text-d-text-main text-sm focus:outline-none focus:border-text-main dark:focus:border-d-text-main transition-colors" />
+                    className="w-full bg-bg-base dark:bg-d-bg-base border border-[#A3A3A3] dark:border-[#2E2E2E] rounded-[6px] py-2 px-3 text-text-main dark:text-d-text-main text-sm focus:outline-none focus:border-text-main dark:focus:border-d-text-main transition-colors" />
                 </div>
               </div>
               {createError && <p className="text-red-500 text-xs font-medium">{createError}</p>}
               
               {createdLink && (
-                <div className="p-3 bg-accent-subtle dark:bg-d-accent-subtle border border-border-subtle dark:border-d-border-subtle rounded-[6px] flex items-center justify-between">
+                <div className="p-3 bg-accent-subtle dark:bg-d-accent-subtle border border-[#A3A3A3] dark:border-[#2E2E2E] rounded-[6px] flex items-center justify-between">
                   <span className="text-accent-text dark:text-d-accent-text font-medium text-sm truncate pr-4">
                     {createdLink}
                   </span>
-                  <button type="button" onClick={() => navigator.clipboard.writeText(createdLink)} className="text-accent-text dark:text-d-accent-text bg-bg-surface dark:bg-d-bg-surface border border-border-subtle dark:border-d-border-subtle px-2 py-1 rounded-[4px] text-xs font-bold uppercase tracking-[0.05em] hover:scale-[0.98] active:scale-[0.95] transition-transform">
+                  <button type="button" onClick={() => navigator.clipboard.writeText(createdLink)} className="text-accent-text dark:text-d-accent-text bg-bg-surface dark:bg-d-bg-surface border border-[#A3A3A3] dark:border-[#2E2E2E] px-2 py-1 rounded-[4px] text-xs font-bold uppercase tracking-[0.05em] hover:scale-[0.98] active:scale-[0.95] transition-transform">
                     Copy
                   </button>
                 </div>
