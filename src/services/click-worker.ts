@@ -27,13 +27,13 @@ export async function queueClick(linkId: string, data: {
   device?: string;
   os?: string;
 }): Promise<void> {
-  writeClickDirect(linkId, data);
+  await writeClickDirect(linkId, data);
 }
 
-function writeClickDirect(linkId: string, data: any) {
-  const now = Date.now();
+async function writeClickDirect(linkId: string, data: any) {
+  const now = new Date();
   try {
-    db.insert(clicksTable).values({
+    await db.insert(clicksTable).values({
       linkId,
       clickedAt: now,
       referrer: data.referrer || null,
@@ -43,7 +43,7 @@ function writeClickDirect(linkId: string, data: any) {
       city: data.city || null,
       device: data.device || null,
       os: data.os || null,
-    }).run();
+    });
   } catch (err) {
     console.error('[ClickWorker] Direct insert failed:', err);
   }
@@ -68,7 +68,7 @@ export async function flushClicksToDb(): Promise<number> {
     for (const clickStr of clicks) {
       try {
         const click = JSON.parse(clickStr);
-        writeClickDirect(click.linkId, click);
+        await writeClickDirect(click.linkId, click);
       } catch {
         // Skip invalid entries
       }
