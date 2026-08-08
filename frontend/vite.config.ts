@@ -5,10 +5,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true, // Needed for Docker to expose the port correctly
+    host: true,
+    watch: {
+      usePolling: true,   // required for Docker on Windows (inotify doesn't fire)
+      interval: 300,
+    },
     proxy: {
       '/api': {
-        target: 'http://app:3000', // Target the backend docker container
+        target: 'http://app:3000',
         changeOrigin: true,
       },
     },

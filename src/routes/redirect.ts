@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { getLinkBySlug, incrementClickCount } from '../services/link.service.js';
+import { getLinkBySlug, incrementClickCount, getCachedUrl, cacheUrl } from '../services/link.service.js';
 import { createClick } from '../services/click.service.js';
 import { lookupGeo } from '../services/geo.service.js';
 
@@ -31,6 +31,45 @@ export async function redirectRoutes(fastify: FastifyInstance) {
   fastify.get('/:shortCode', async (request: FastifyRequest, reply: FastifyReply) => {
     const { shortCode } = request.params as { shortCode: string };
 
+    // Fast path: cache hit → redirect immediately, resolve metadata async
+    const cachedUrl = await getCachedUrl(shortCode);
+    if (cachedUrl) {
+      // Fire-and-forget: analytics + click count, don't block redirect
+      setImmediate(async () => {
+        try {
+          const link = await getLinkBySlug(shortCode);
+          if (!link) return;
+
+          const now = Date.now();
+          if ((link.expiresAt && link.expiresAt < now) || (link.maxClicks && link.clickCount >= link.maxClicks)) return;
+
+          await incrementClickCount(shortCode);
+
+          const userAgent = request.headers['user-agent'] as string | undefined;
+          const referrer = request.headers['referer'] as string | undefined;
+          const ipAddress = (request.ip === '::1' || request.ip === '127.0.0.1' ? '' : request.ip) || request.headers['x-forwarded-for'] as string || '';
+          const { device, os } = parseDevice(userAgent);
+          const geo = await lookupGeo(ipAddress);
+
+          await createClick({
+            linkId: link.id,
+            referrer,
+            userAgent,
+            ipAddress,
+            country: geo.country,
+            city: geo.city,
+            device,
+            os,
+          });
+        } catch {
+          // analytics failure must never affect redirect
+        }
+      });
+
+      return reply.redirect(cachedUrl, 302);
+    }
+
+    // Slow path: cache miss → fetch from DB
     const link = await getLinkBySlug(shortCode);
     if (!link) {
       return reply.status(404).send({ error: 'Link not found' });
@@ -51,6 +90,9 @@ export async function redirectRoutes(fastify: FastifyInstance) {
         return reply.redirect(`/${shortCode}/locked`, 302);
       }
     }
+
+    // Populate cache for next request
+    await cacheUrl(shortCode, link.originalUrl);
 
     await incrementClickCount(shortCode);
 

@@ -61,8 +61,8 @@ export default function MinimalHome({ onLoginClick, isDark, setIsDark }: Props) 
   };
 
   return (
-    <div 
-      className="min-h-[100dvh] flex flex-col items-center justify-center p-6 bg-bg-base dark:bg-[#111111] text-text-main dark:text-d-text-main transition-colors duration-300" 
+    <div
+      className="min-h-[100dvh] flex flex-col items-center justify-center p-6 text-text-main dark:text-d-text-main transition-colors duration-300"
       style={{ fontFamily: "'Geist Sans', 'SF Pro Display', 'Helvetica Neue', sans-serif" }}
     >
       {/* Navbar */}
@@ -92,10 +92,20 @@ export default function MinimalHome({ onLoginClick, isDark, setIsDark }: Props) 
         </div>
       </header>
 
-      {/* Ambient background */}
-      <div className="fixed inset-0 pointer-events-none -z-10 flex items-center justify-center overflow-hidden opacity-[0.03]">
-        <div className="w-[800px] h-[800px] rounded-full bg-[radial-gradient(circle,#111_0%,transparent_70%)] dark:bg-[radial-gradient(circle,#fff_0%,transparent_70%)] blur-3xl mix-blend-multiply dark:mix-blend-screen" />
-      </div>
+      {/* Slow-drifting ambient fog */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 0,
+          background: isDark
+            ? 'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(255,255,255,0.03) 0%, transparent 70%)'
+            : 'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(17,17,17,0.025) 0%, transparent 70%)',
+          animation: 'mesh-drift 28s ease-in-out infinite alternate',
+        }}
+      />
 
       <main className="w-full max-w-3xl mx-auto flex flex-col items-center animate-[fade-in-up_600ms_cubic-bezier(0.16,1,0.3,1)] pt-24 pb-32">
         
@@ -181,6 +191,12 @@ export default function MinimalHome({ onLoginClick, isDark, setIsDark }: Props) 
         @keyframes fade-in-up {
           0% { opacity: 0; transform: translateY(12px); }
           100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes mesh-drift {
+          0%   { transform: translate(0px, 0px) scale(1); }
+          33%  { transform: translate(12px, -8px) scale(1.03); }
+          66%  { transform: translate(-8px, 10px) scale(0.98); }
+          100% { transform: translate(4px, -4px) scale(1.01); }
         }
         .animate-\\[fade-in-up_600ms_cubic-bezier\\(0\\.16\\,1\\,0\\.3\\,1\\)\\] {
           animation: fade-in-up 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;

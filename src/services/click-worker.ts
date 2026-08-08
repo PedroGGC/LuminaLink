@@ -27,7 +27,19 @@ export async function queueClick(linkId: string, data: {
   device?: string;
   os?: string;
 }): Promise<void> {
-  await writeClickDirect(linkId, data);
+  const redis = getRedisSafe();
+  if (!redis) {
+    // Redis offline: write directly to DB
+    await writeClickDirect(linkId, data);
+    return;
+  }
+
+  try {
+    await redis.lpush(CLICK_QUEUE_KEY, JSON.stringify({ linkId, ...data, timestamp: Date.now() }));
+  } catch {
+    // Redis failed mid-operation: fallback to direct insert
+    await writeClickDirect(linkId, data);
+  }
 }
 
 async function writeClickDirect(linkId: string, data: any) {
